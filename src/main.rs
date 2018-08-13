@@ -5,7 +5,9 @@ extern crate reqwest;
 extern crate serde_json;
 
 use chrono::{DateTime, Utc};
-use reqwest::header::{qitem, Accept, Headers, Link, RelationType, UserAgent};
+use reqwest::header::{
+    qitem, Accept, Authorization, Bearer, Headers, Link, RelationType, UserAgent,
+};
 use std::{env, fmt};
 
 #[derive(Debug, Deserialize)]
@@ -44,7 +46,7 @@ impl fmt::Display for Repository {
 fn main() -> Result<(), reqwest::Error> {
     let args: Vec<String> = env::args().collect();
 
-    let client = build_client()?;
+    let client = build_client(args[2].to_owned())?;
 
     let mut stars: Vec<Star> = Vec::new();
 
@@ -70,12 +72,13 @@ fn main() -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-fn build_client() -> reqwest::Result<reqwest::Client> {
+fn build_client(token: String) -> reqwest::Result<reqwest::Client> {
     let mut headers = Headers::new();
     headers.set(Accept(vec![qitem(
         "application/vnd.github.v3.star+json".parse().unwrap(),
     )]));
     headers.set(UserAgent::new("supernova/0.1.0"));
+    headers.set(Authorization(Bearer { token: token }));
 
     return reqwest::Client::builder().default_headers(headers).build();
 }
