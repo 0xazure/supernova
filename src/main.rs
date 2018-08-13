@@ -50,8 +50,7 @@ fn main() -> Result<(), reqwest::Error> {
 
     let mut stars: Vec<Star> = Vec::new();
 
-    let mut next_link =
-        Some(format!("https://api.github.com/users/{}/starred", &args[1]).to_owned());
+    let mut next_link = Some(format!("https://api.github.com/users/{}/starred", &args[1]));
 
     while next_link.is_some() {
         if let Some(link) = next_link {
