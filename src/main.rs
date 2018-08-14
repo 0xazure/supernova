@@ -77,7 +77,7 @@ fn build_client(token: String) -> reqwest::Result<reqwest::Client> {
         "application/vnd.github.v3.star+json".parse().unwrap(),
     )]));
     headers.set(UserAgent::new("supernova/0.1.0"));
-    headers.set(Authorization(Bearer { token: token }));
+    headers.set(Authorization(Bearer { token }));
 
     return reqwest::Client::builder().default_headers(headers).build();
 }
