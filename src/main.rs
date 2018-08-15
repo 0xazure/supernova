@@ -8,7 +8,28 @@ use chrono::{DateTime, Utc};
 use reqwest::header::{
     qitem, Accept, Authorization, Bearer, Headers, Link, RelationType, UserAgent,
 };
-use std::{env, fmt};
+use std::{env, fmt, process};
+
+#[derive(Debug)]
+struct Config {
+    username: String,
+    token: Option<String>,
+}
+
+impl Config {
+    fn new(mut args: env::Args) -> Result<Config, &'static str> {
+        args.next();
+
+        let username = match args.next() {
+            None => return Err("No username provided"),
+            Some(arg) => arg,
+        };
+
+        let token = args.next();
+
+        Ok(Config { username, token })
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct Star {
@@ -44,13 +65,19 @@ impl fmt::Display for Repository {
 }
 
 fn main() -> Result<(), reqwest::Error> {
-    let args: Vec<String> = env::args().collect();
+    let config = Config::new(env::args()).unwrap_or_else(|err| {
+        println!("Problem parsing arguments: {}", err);
+        process::exit(1);
+    });
 
-    let client = build_client(args[2].to_owned())?;
+    let client = build_client(config.token.unwrap())?;
 
     let mut stars: Vec<Star> = Vec::new();
 
-    let mut next_link = Some(format!("https://api.github.com/users/{}/starred", &args[1]));
+    let mut next_link = Some(format!(
+        "https://api.github.com/users/{}/starred",
+        config.username
+    ));
 
     while next_link.is_some() {
         if let Some(link) = next_link {
