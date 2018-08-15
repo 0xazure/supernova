@@ -5,9 +5,7 @@ extern crate reqwest;
 extern crate serde_json;
 
 use chrono::{DateTime, Utc};
-use reqwest::header::{
-    qitem, Accept, Authorization, Bearer, Headers, Link, RelationType, UserAgent,
-};
+use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
 use std::{env, fmt, process};
 
 #[derive(Debug)]
@@ -28,6 +26,36 @@ impl Config {
         let token = args.next();
 
         Ok(Config { username, token })
+    }
+}
+
+#[derive(Debug)]
+struct ClientBuilder {
+    inner: reqwest::ClientBuilder,
+    headers: reqwest::header::Headers,
+}
+
+impl ClientBuilder {
+    fn new() -> ClientBuilder {
+        let mut headers = reqwest::header::Headers::new();
+        headers.set(Accept(vec![qitem(
+            "application/vnd.github.v3.star+json".parse().unwrap(),
+        )]));
+        headers.set(UserAgent::new("supernova/0.1.0"));
+
+        ClientBuilder {
+            inner: reqwest::ClientBuilder::new(),
+            headers,
+        }
+    }
+
+    fn build(&mut self) -> reqwest::Result<reqwest::Client> {
+        self.inner.build()
+    }
+
+    fn set_authorization_token(&mut self, token: String) -> &mut ClientBuilder {
+        self.headers.set(Authorization(Bearer { token }));
+        self
     }
 }
 
@@ -70,7 +98,13 @@ fn main() -> Result<(), reqwest::Error> {
         process::exit(1);
     });
 
-    let client = build_client(config.token.unwrap())?;
+    let mut builder = ClientBuilder::new();
+
+    if let Some(ref token) = config.token {
+        builder.set_authorization_token(token.to_owned());
+    }
+
+    let client = builder.build()?;
 
     let mut stars: Vec<Star> = Vec::new();
 
@@ -98,18 +132,7 @@ fn main() -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-fn build_client(token: String) -> reqwest::Result<reqwest::Client> {
-    let mut headers = Headers::new();
-    headers.set(Accept(vec![qitem(
-        "application/vnd.github.v3.star+json".parse().unwrap(),
-    )]));
-    headers.set(UserAgent::new("supernova/0.1.0"));
-    headers.set(Authorization(Bearer { token }));
-
-    return reqwest::Client::builder().default_headers(headers).build();
-}
-
-fn extract_link_next(headers: &Headers) -> Option<String> {
+fn extract_link_next(headers: &reqwest::header::Headers) -> Option<String> {
     let link_headers = headers.get::<Link>();
 
     return match link_headers {
