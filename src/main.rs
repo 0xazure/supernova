@@ -33,19 +33,27 @@ impl Config {
 struct ClientBuilder {
     inner: reqwest::ClientBuilder,
     headers: reqwest::header::Headers,
+    config: Config,
 }
 
 impl ClientBuilder {
-    fn new() -> ClientBuilder {
+    fn new(config: Config) -> ClientBuilder {
         let mut headers = reqwest::header::Headers::new();
         headers.set(Accept(vec![qitem(
             "application/vnd.github.v3.star+json".parse().unwrap(),
         )]));
         headers.set(UserAgent::new("supernova/0.1.0"));
 
+        if let Some(ref token) = config.token {
+            headers.set(Authorization(Bearer {
+                token: token.clone(),
+            }));
+        }
+
         ClientBuilder {
             inner: reqwest::ClientBuilder::new(),
             headers,
+            config,
         }
     }
 
@@ -53,9 +61,11 @@ impl ClientBuilder {
         self.inner.build()
     }
 
-    fn set_authorization_token(&mut self, token: String) -> &mut ClientBuilder {
-        self.headers.set(Authorization(Bearer { token }));
-        self
+    fn url(&self) -> Option<String> {
+        Some(format!(
+            "https://api.github.com/users/{}/starred",
+            self.config.username
+        ))
     }
 }
 
@@ -108,11 +118,8 @@ fn main() -> Result<(), reqwest::Error> {
 
     let mut stars: Vec<Star> = Vec::new();
 
-    let mut next_link = Some(format!(
-        "https://api.github.com/users/{}/starred",
-        config.username
-    ));
-
+    // TODO: can client return an iter of links so we can remove the `next_link` variable?
+    let mut next_link = builder.url();
     while next_link.is_some() {
         if let Some(link) = next_link {
             let mut res = client.get(&link).send()?;
