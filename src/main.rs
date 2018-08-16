@@ -138,8 +138,7 @@ fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     for star in stars.iter() {
         println!("{}", star);
     }
-
-    println!("collected {} stars", stars.len());
+    println!("Collected {} stars", stars.len());
 
     Ok(())
 }
