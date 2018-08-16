@@ -6,7 +6,7 @@ extern crate serde_json;
 
 use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
-use std::{env, fmt, mem, process};
+use std::{env, error, fmt, mem, process};
 
 #[derive(Debug)]
 struct Config {
@@ -100,12 +100,19 @@ impl fmt::Display for Repository {
     }
 }
 
-fn main() -> Result<(), reqwest::Error> {
+fn main() {
     let config = Config::new(env::args()).unwrap_or_else(|err| {
         println!("Problem parsing arguments: {}", err);
         process::exit(1);
     });
 
+    if let Err(e) = collect_stars(config) {
+        println!("Application error: {}", e);
+        process::exit(1);
+    }
+}
+
+fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     let mut builder = ClientBuilder::new();
 
     if let Some(ref token) = config.token {
