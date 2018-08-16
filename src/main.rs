@@ -27,6 +27,13 @@ impl Config {
 
         Ok(Config { username, token })
     }
+
+    fn url(self) -> Option<String> {
+        Some(format!(
+            "https://api.github.com/users/{}/starred",
+            self.username
+        ))
+    }
 }
 
 #[derive(Debug)]
@@ -109,10 +116,7 @@ fn main() -> Result<(), reqwest::Error> {
 
     let mut stars: Vec<Star> = Vec::new();
 
-    let mut next_link = Some(format!(
-        "https://api.github.com/users/{}/starred",
-        config.username
-    ));
+    let mut next_link = config.url();
 
     while next_link.is_some() {
         if let Some(link) = next_link {
