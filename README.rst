@@ -4,7 +4,7 @@ supernova
 .. image:: https://travis-ci.org/0xazure/supernova.svg?branch=master
     :target: https://travis-ci.org/0xazure/supernova
 
-A tool for exporting GitHub stars as an organized list.
+    Tool for exporting GitHub stars as an organized list.
 
 things learned
 --------------
