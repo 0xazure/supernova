@@ -1,0 +1,24 @@
+language: rust
+os:
+  - linux
+  - windows
+rust:
+  - stable
+  - beta
+  - nightly
+# Need to cache the whole `.cargo` directory to keep .crates.toml for
+# cargo-update to work, but don't cache the cargo registry
+before_cache:
+  - rm -rf /home/travis/.cargo/registry
+cache:
+  directories:
+    - /home/travis/.cargo
+before_script:
+  - rustup component add clippy-preview
+script:
+  - cargo clippy --all-targets --all-features -- -D warnings
+  - cargo test --verbose
+matrix:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
