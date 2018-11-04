@@ -1,14 +1,6 @@
 language: rust
-branches:
-  only:
-    - master
-os:
-  - linux
-  - windows
-rust:
-  - stable
-  - beta
-  - nightly
+sudo: false
+
 # Need to cache the whole `.cargo` directory to keep .crates.toml for
 # cargo-update to work, but don't cache the cargo registry
 before_cache:
@@ -16,12 +8,87 @@ before_cache:
 cache:
   directories:
     - /home/travis/.cargo
-before_script:
-  - if [[ "$TRAVIS_RUST_VERSION" == "stable" || "$TRAVIS_RUST_VERSION" == "nightly" ]]; then rustup component add clippy-preview; fi
-script:
-  - if [[ "$TRAVIS_RUST_VERSION" == "stable" || "$TRAVIS_RUST_VERSION" == "nightly" ]]; then cargo clippy --all-targets --all-features -- -D warnings; fi
-  - cargo test --verbose
+
+DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
+  before_deploy:
+    - name="supernova-$TRAVIS_TAG-$TARGET"
+    - mkdir $name
+    - cp target/$TARGET/release/supernova $name/
+    - cp README.md LICENSE-MIT LICENSE-APACHE $name/
+    - tar czvf $name.tar.gz $name
+    - sha1sum $name.tar.gz > $name.tar.gz.sha1
+  deploy:
+    provider: releases
+    api_key: $GH_TOKEN
+    file:
+    - supernova-$TRAVIS_TAG-$TARGET.tar.gz
+    - $name.tar.gz.sha1
+    skip_cleanup: true
+    on:
+      branch: master
+      repo: SeanPrashad/supernova
+      tags: true
+
 matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
+  include:
+    - name: Linux-Stable
+      env: TARGET=x86_64-unknown-linux-gnu
+      rust: stable
+      before_script:
+        - rustup component add clippy-preview
+      script:
+        - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo test --verbose
+        - cargo build --release --target $TARGET --locked
+      <<: *DEPLOY_TO_GITHUB
+
+    - name: Linux-Beta
+      env: TARGET=x86_64-unknown-linux-gnu
+      rust: beta
+      script:
+        - cargo test --verbose
+        - cargo build --verbose
+
+    - name: Linux-Nightly
+      env: TARGET=x86_64-unknown-linux-gnu
+      rust: nightly
+      before_script:
+        - rustup component add clippy-preview
+      script:
+        - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo test --verbose
+        - cargo build --verbose
+    
+    - name: Windows-Stable
+      os: windows
+      env: TARGET=x86_64-pc-windows-msvc
+      rust: stable
+      before_script:
+        - rustup component add clippy-preview
+      script:
+        - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo test --verbose
+        - cargo build --release --target $TARGET --locked
+      <<: *DEPLOY_TO_GITHUB
+
+    - name: Windows-Beta
+      os: windows
+      env: TARGET=x86_64-pc-windows-msvc
+      rust: beta
+      script:
+        - cargo test --verbose
+        - cargo build --verbose
+
+    - name: Windows-Nightly
+      os: windows
+      env: TARGET=x86_64-pc-windows-msvc
+      rust: nightly
+      before_script:
+        - rustup component add clippy-preview
+      script:
+        - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo test --verbose
+        - cargo build --verbose
