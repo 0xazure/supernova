@@ -1,4 +1,5 @@
 extern crate chrono;
+extern crate clap;
 extern crate reqwest;
 extern crate serde_derive;
 extern crate serde_json;
@@ -6,7 +7,7 @@ extern crate serde_json;
 use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
 use serde_derive::Deserialize;
-use std::{env, error, fmt, mem};
+use std::{error, fmt, mem};
 
 #[derive(Debug)]
 pub struct Config {
@@ -15,24 +16,20 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
-        args.next();
-
-        let username = match args.next() {
-            None => return Err("No username provided"),
-            Some(arg) => arg,
-        };
-
-        let token = args.next();
-
-        Ok(Config { username, token })
-    }
-
     fn url(self) -> Option<String> {
         Some(format!(
             "https://api.github.com/users/{}/starred",
             self.username
         ))
+    }
+}
+
+impl<'a> From<clap::ArgMatches<'a>> for Config {
+    fn from(matches: clap::ArgMatches) -> Self {
+        Config {
+            username: matches.value_of("USERNAME").unwrap().to_owned(),
+            token: matches.value_of("TOKEN").map(String::from),
+        }
     }
 }
 
