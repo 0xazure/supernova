@@ -1,11 +1,11 @@
-#[macro_use]
-extern crate serde_derive;
 extern crate chrono;
 extern crate reqwest;
+extern crate serde_derive;
 extern crate serde_json;
 
 use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
+use serde_derive::Deserialize;
 use std::{env, error, fmt, mem};
 
 #[derive(Debug)]
