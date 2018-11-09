@@ -96,7 +96,7 @@ impl fmt::Display for Repository {
             write!(f, " - {}", description)?;
         }
 
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -134,7 +134,7 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
 fn extract_link_next(headers: &reqwest::header::Headers) -> Option<String> {
     let link_headers = headers.get::<Link>();
 
-    return match link_headers {
+    match link_headers {
         None => None,
         Some(links) => links
             .values()
@@ -146,5 +146,5 @@ fn extract_link_next(headers: &reqwest::header::Headers) -> Option<String> {
                 })
             })
             .and_then(|link_value| Some(link_value.link().to_owned())),
-    };
+    }
 }
