@@ -7,6 +7,10 @@ use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
 use serde_derive::Deserialize;
 use std::{env, error, fmt, mem};
+use std::error::Error;
+use std::io::prelude::*;
+use std::fs::File;
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct Config {
@@ -127,6 +131,20 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
         println!("{}", star);
     }
     println!("Collected {} stars", stars.len());
+
+    let path = Path::new("output.md");
+    let display = path.display();
+
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("couldn't create {}: {}", 
+                            display, 
+                            why.description()),
+        Ok(file) => file,
+    };
+
+    for star in stars.iter(){ 
+        write!(file, "{}\x20\x20\r", star);
+    }
 
     Ok(())
 }
