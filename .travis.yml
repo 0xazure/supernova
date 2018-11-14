@@ -14,9 +14,9 @@ cache:
   directories:
     - /home/travis/.cargo
 before_script:
-  - rustup component add clippy-preview
+  - if [[ "$TRAVIS_RUST_VERSION" == "stable" || "$TRAVIS_RUST_VERSION" == "nightly" ]]; then rustup component add clippy-preview; fi
 script:
-  - cargo clippy --all-targets --all-features -- -D warnings
+  - if [[ "$TRAVIS_RUST_VERSION" == "stable" || "$TRAVIS_RUST_VERSION" == "nightly" ]]; then cargo clippy --all-targets --all-features -- -D warnings; fi
   - cargo test --verbose
 matrix:
   allow_failures:
