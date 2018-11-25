@@ -103,6 +103,9 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     if let Some(ref token) = config.token {
         builder.set_authorization_token(token.to_owned());
     }
+    else {
+        println!("Authentication Warning: You have not provided an auth token and are liimted to 60 requests per hour. Provide an auth token by running the program with '--token <auth-token>' for 5000 requests per hour.");
+    }
 
     let client = builder.build()?;
 
@@ -120,9 +123,9 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
         }
     }
 
-    for star in stars.iter() {
-        println!("{}", star);
-    }
+    // for star in stars.iter() {
+    //     println!("{}", star);
+    // }
     println!("Collected {} stars", stars.len());
 
     Ok(())
