@@ -105,7 +105,7 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
         builder.set_authorization_token(token.to_owned());
     }
     else {
-        println!("Authentication Warning: You have not provided an auth token and are liimted to 60 requests per hour. Provide an auth token by running the program with '--token <auth-token>' for 5000 requests per hour.");
+        println!("Authentication Warning: This is an unauthenticated request with a limit of 60 requests per hour. Re-run this program using an auth token by adding `--token <auth-token>` for an increased quota of 5000 requests per hour.")
     }
 
     let client = builder.build()?;
