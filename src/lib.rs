@@ -4,10 +4,11 @@ extern crate reqwest;
 extern crate serde_derive;
 extern crate serde_json;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Local};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
 use serde_derive::Deserialize;
 use std::{error, fmt, mem};
+use std::time::{UNIX_EPOCH, Duration};
 
 #[derive(Debug)]
 pub struct Config {
@@ -116,6 +117,7 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     while next_link.is_some() {
         if let Some(link) = next_link {
             let mut res = client.get(&link).send()?;
+
             next_link = extract_link_next(res.headers());
 
             let mut s: Vec<Star> = res.json()?;
@@ -123,15 +125,45 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
         }
     }
 
-    // for star in stars.iter() {
-    //     println!("{}", star);
-    // }
+    for star in stars.iter() {
+        println!("{}", star);
+    }
     println!("Collected {} stars", stars.len());
 
     Ok(())
 }
 
 fn extract_link_next(headers: &reqwest::header::Headers) -> Option<String> {
+    let total_rate_limit = "X-RateLimit-Limit";
+    let rate_limit_remaining = "X-RateLimit-Remaining";
+    let rate_limit_reset_time = "X-RateLimit-Reset";   
+    
+    let mut remaining: i32 = 0; 
+    let mut total: i32 = 0;
+
+    for header in headers.iter() {
+       if header.name() == total_rate_limit {
+           total = header.value_string().parse::<i32>().unwrap();
+       }
+       if header.name() == rate_limit_remaining {
+           remaining = header.value_string().parse::<i32>().unwrap();
+       }
+       if header.name() == rate_limit_reset_time {
+            let reset_time = header.value_string();
+            let timestamp = reset_time.parse::<u64>().unwrap();
+
+            // Creates a new SystemTime from the specified number of whole seconds
+            let d = UNIX_EPOCH + Duration::from_secs(timestamp);
+            
+            // Create DateTime from SystemTime
+            let datetime = DateTime::<Local>::from(d);
+
+            // Formats the combined date and time with the specified format string.
+            let timestamp_str = datetime.format("%Y-%m-%d %I:%M").to_string();
+            println!{"You have {} out of {} requests remaining. Your request limit will reset at {}", remaining, total, timestamp_str};
+        }
+    }
+   
     let link_headers = headers.get::<Link>();
 
     match link_headers {
