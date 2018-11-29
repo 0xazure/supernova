@@ -152,7 +152,7 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
                 StatusCode::Forbidden => {
                     return Err(format!("Uh-oh! You have {} out of {} requests remaining. Your request limit will reset at {}", remaining, total, timestamp_str).into());
                 },
-                s => (),
+                _ => (),
             }
 
             next_link = extract_link_next(res.headers());
