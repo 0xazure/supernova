@@ -26,7 +26,7 @@ DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
     skip_cleanup: true
     on:
       branch: master
-      repo: SeanPrashad/supernova
+      repo: 0xazure/supernova
       tags: true
 
 matrix:
