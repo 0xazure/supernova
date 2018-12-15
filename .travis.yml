@@ -18,9 +18,13 @@ cache:
     - /home/travis/.cargo
 before_script:
   - if [[ "$TRAVIS_RUST_VERSION" == "stable" || "$TRAVIS_RUST_VERSION" == "nightly" ]]; then rustup component add clippy-preview; fi
+  - rustup component add rustfmt
 script:
   - if [[ "$TRAVIS_RUST_VERSION" == "stable" || "$TRAVIS_RUST_VERSION" == "nightly" ]]; then cargo clippy --all-targets --all-features -- -D warnings; fi
+  - cargo fmt --all --write-mode diff
+  - cargo build
   - cargo test --verbose
+
 matrix:
   allow_failures:
     - rust: nightly
