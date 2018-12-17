@@ -83,6 +83,7 @@ struct Repository {
     full_name: String,
     description: Option<String>,
     stargazers_count: i32,
+    language: Option<String>, 
 }
 
 impl fmt::Display for Repository {
@@ -91,6 +92,10 @@ impl fmt::Display for Repository {
 
         if let Some(ref description) = self.description {
             write!(f, " - {}", description)?;
+        }
+
+        if let Some(ref language) = self.language {
+            write!(f, "Main Language: {}", language)?;
         }
 
         Ok(())
