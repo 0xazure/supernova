@@ -4,12 +4,14 @@ extern crate reqwest;
 extern crate serde_derive;
 extern crate serde_json;
 
-use chrono::{DateTime, Utc, Local};
+use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
-use serde_derive::Deserialize;
-use std::{error, fmt, mem};
-use std::time::{UNIX_EPOCH, Duration};
 use reqwest::StatusCode;
+use serde_derive::Deserialize;
+use std::time::{UNIX_EPOCH, Duration, SystemTime};
+use std::{error, fmt, mem};
+
+
 
 #[derive(Debug)]
 pub struct Config {
@@ -18,7 +20,7 @@ pub struct Config {
 }
 
 impl Config {
-    fn url(self) -> Option<String> {
+    fn url(self) -> Option<String> { 
         Some(format!(
             "https://api.github.com/users/{}/starred",
             self.username
@@ -101,12 +103,13 @@ impl fmt::Display for Repository {
 
 pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     let mut builder = ClientBuilder::new();
+    let mut print_auth_warning = false; 
 
     if let Some(ref token) = config.token {
         builder.set_authorization_token(token.to_owned());
     }
     else {
-        println!("Authentication Warning: This is an unauthenticated request with a limit of 60 requests per hour. Re-run this program using an auth token by adding `--token <auth-token>` for an increased quota of 5000 requests per hour.")
+        print_auth_warning = true; 
     }
 
     let client = builder.build()?;
@@ -114,43 +117,37 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     let mut stars: Vec<Star> = Vec::new();
 
     let mut next_link = config.url();
-
-    let total_rate_limit = "X-RateLimit-Limit";
-    let rate_limit_remaining = "X-RateLimit-Remaining";
-    let rate_limit_reset_time = "X-RateLimit-Reset";   
     
     let mut remaining: i32 = 0; 
     let mut total: i32 = 0;
-    let mut timestamp_str = String::new();
+    let mut reset_time = SystemTime::now();
+
     while next_link.is_some() {
         if let Some(link) = next_link {
             let mut res = client.get(&link).send()?;
 
             for header in res.headers().iter() {
-                if header.name() == total_rate_limit {
-                    total = header.value_string().parse::<i32>().unwrap();
-                }
-                if header.name() == rate_limit_remaining {
-                    remaining = header.value_string().parse::<i32>().unwrap();
-                }
-                if header.name() == rate_limit_reset_time {
-                        let reset_time = header.value_string();
-                        let timestamp = reset_time.parse::<u64>().unwrap();
+                match header.name() {
+                    "X-RateLimit-Limit" => {
+                        total = header.value_string().parse::<i32>()?;
+                    },
+                    "X-RateLimit-Remaining" => { 
+                        remaining = header.value_string().parse::<i32>()?;
+                    },
+                    "X-RateLimit-Reset" => {
+                        let seconds = header.value_string().parse::<u64>()?;
 
                         // Creates a new SystemTime from the specified number of whole seconds
-                        let d = UNIX_EPOCH + Duration::from_secs(timestamp);
-                        
-                        // Create DateTime from SystemTime
-                        let datetime = DateTime::<Local>::from(d);
-
-                        // Formats the combined date and time with the specified format string.
-                        timestamp_str = datetime.format("%Y-%m-%d %I:%M").to_string();
+                        reset_time = UNIX_EPOCH + Duration::from_secs(seconds);
+                    },
+                    _ =>(),
                 }
             }
             
             match res.status() {
                 StatusCode::Forbidden => {
-                    return Err(format!("Uh-oh! You have {} out of {} requests remaining. Your request limit will reset at {}", remaining, total, timestamp_str).into());
+                    //this type of err, or panic? 
+                    return Err(format!("Uh-oh! You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, reset_time.duration_since(SystemTime::now())?.as_secs()/60).into());
                 },
                 _ => (),
             }
@@ -167,9 +164,13 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     }
     println!("Collected {} stars", stars.len());
 
+    if print_auth_warning {
+        eprintln!("\nRequest completed without authentication, re-run and provide token using `--token <auth-token>` to increase your requests from 60 to 5000 requests per hour.");
+    }
+
     match remaining {
-        10 | 0...5 => println!("Warning: You have {} out of {} requests remaining. Your request limit will reset at {}", remaining, total, timestamp_str),
-        _ => (),  
+        10 | 0...5 => eprintln!("Warning: You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, reset_time.duration_since(SystemTime::now())?.as_secs()/60),
+        _ => println!("Warning: You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, reset_time.duration_since(SystemTime::now())?.as_secs()/60),  
     }
 
     Ok(())
