@@ -8,10 +8,8 @@ use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
 use reqwest::StatusCode;
 use serde_derive::Deserialize;
-use std::time::{UNIX_EPOCH, Duration, SystemTime};
+use std::time::{UNIX_EPOCH, SystemTime, Duration};
 use std::{error, fmt, mem};
-
-
 
 #[derive(Debug)]
 pub struct Config {
@@ -20,7 +18,7 @@ pub struct Config {
 }
 
 impl Config {
-    fn url(self) -> Option<String> { 
+    fn url(self) -> Option<String> {
         Some(format!(
             "https://api.github.com/users/{}/starred",
             self.username
@@ -120,7 +118,7 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     
     let mut remaining: i32 = 0; 
     let mut total: i32 = 0;
-    let mut reset_time = SystemTime::now();
+    let mut mins = 0;
 
     while next_link.is_some() {
         if let Some(link) = next_link {
@@ -138,7 +136,8 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
                         let seconds = header.value_string().parse::<u64>()?;
 
                         // Creates a new SystemTime from the specified number of whole seconds
-                        reset_time = UNIX_EPOCH + Duration::from_secs(seconds);
+                        let reset_time = UNIX_EPOCH + Duration::from_secs(seconds);
+                        mins = reset_time.duration_since(SystemTime::now())?.as_secs()/60;
                     },
                     _ =>(),
                 }
@@ -146,8 +145,7 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
             
             match res.status() {
                 StatusCode::Forbidden => {
-                    //this type of err, or panic? 
-                    return Err(format!("Uh-oh! You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, reset_time.duration_since(SystemTime::now())?.as_secs()/60).into());
+                    return Err(format!("Uh-oh! You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, mins).into());
                 },
                 _ => (),
             }
@@ -169,8 +167,8 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     }
 
     match remaining {
-        10 | 0...5 => eprintln!("Warning: You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, reset_time.duration_since(SystemTime::now())?.as_secs()/60),
-        _ => println!("Warning: You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, reset_time.duration_since(SystemTime::now())?.as_secs()/60),  
+        10 | 0...5 => eprintln!("Warning: You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, mins),
+        _ => (),
     }
 
     Ok(())
