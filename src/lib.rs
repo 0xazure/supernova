@@ -6,7 +6,9 @@ extern crate serde_json;
 
 use chrono::{DateTime, Utc};
 use reqwest::header::{qitem, Accept, Authorization, Bearer, Link, RelationType, UserAgent};
+use reqwest::StatusCode;
 use serde_derive::Deserialize;
+use std::time::{UNIX_EPOCH, SystemTime, Duration};
 use std::{error, fmt, mem};
 
 #[derive(Debug)]
@@ -99,9 +101,13 @@ impl fmt::Display for Repository {
 
 pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     let mut builder = ClientBuilder::new();
+    let mut print_auth_warning = false; 
 
     if let Some(ref token) = config.token {
         builder.set_authorization_token(token.to_owned());
+    }
+    else {
+        print_auth_warning = true; 
     }
 
     let client = builder.build()?;
@@ -109,12 +115,43 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
     let mut stars: Vec<Star> = Vec::new();
 
     let mut next_link = config.url();
+    
+    let mut remaining: i32 = 0; 
+    let mut total: i32 = 0;
+    let mut mins = 0;
 
     while next_link.is_some() {
         if let Some(link) = next_link {
             let mut res = client.get(&link).send()?;
-            next_link = extract_link_next(res.headers());
 
+            for header in res.headers().iter() {
+                match header.name() {
+                    "X-RateLimit-Limit" => {
+                        total = header.value_string().parse::<i32>()?;
+                    },
+                    "X-RateLimit-Remaining" => { 
+                        remaining = header.value_string().parse::<i32>()?;
+                    },
+                    "X-RateLimit-Reset" => {
+                        let seconds = header.value_string().parse::<u64>()?;
+
+                        // Creates a new SystemTime from the specified number of whole seconds
+                        let reset_time = UNIX_EPOCH + Duration::from_secs(seconds);
+                        mins = reset_time.duration_since(SystemTime::now())?.as_secs()/60;
+                    },
+                    _ =>(),
+                }
+            }
+            
+            match res.status() {
+                StatusCode::Forbidden => {
+                    return Err(format!("Uh-oh! You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, mins).into());
+                },
+                _ => (),
+            }
+
+            next_link = extract_link_next(res.headers());
+        
             let mut s: Vec<Star> = res.json()?;
             stars.append(&mut s);
         }
@@ -124,6 +161,15 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
         println!("{}", star);
     }
     println!("Collected {} stars", stars.len());
+
+    if print_auth_warning {
+        eprintln!("\nRequest completed without authentication, re-run and provide token using `--token <auth-token>` to increase your requests from 60 to 5000 requests per hour.");
+    }
+
+    match remaining {
+        10 | 0...5 => eprintln!("Warning: You have {} out of {} requests remaining. Your request limit will reset in {} minutes.", remaining, total, mins),
+        _ => (),
+    }
 
     Ok(())
 }
