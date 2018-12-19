@@ -68,6 +68,7 @@ impl ClientBuilder {
 struct Star {
     starred_at: DateTime<Utc>,
     repo: Repository,
+    //lang: Languages,
 }
 
 impl fmt::Display for Star {
@@ -83,6 +84,7 @@ struct Repository {
     full_name: String,
     description: Option<String>,
     stargazers_count: i32,
+    languages_url: Option<String>,
 }
 
 impl fmt::Display for Repository {
@@ -93,11 +95,33 @@ impl fmt::Display for Repository {
             write!(f, " - {}", description)?;
         }
 
+        if let Some(ref languages_url) = self.languages_url {
+            write!(f, " - {}", languages_url)?;
+        }
+
         Ok(())
     }
 }
 
-pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
+#[derive(Debug, Deserialize)]
+struct Languages {
+    key: Option<String>,
+    value: Option<String>,
+}
+
+impl fmt::Display for Languages {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(ref key) = self.key {
+            write!(f, " - {}", key)?;
+        }
+         if let Some(ref value) = self.value {
+            write!(f, " - {}", value)?;
+        }
+        Ok(())
+    }
+}
+
+pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> { //Where the json extraction happens
     let mut builder = ClientBuilder::new();
 
     if let Some(ref token) = config.token {
@@ -118,6 +142,20 @@ pub fn collect_stars(config: Config) -> Result<(), Box<dyn error::Error>> {
             let mut s: Vec<Star> = res.json()?;
             stars.append(&mut s);
         }
+    }
+
+    let mut langs: Vec<Languages> = Vec::new();
+
+    for star in stars.iter(){
+        let ref mut next = star.repo.languages_url;
+        if let Some(ref link) = next{
+            let mut res = client.get(link).send()?;
+            next = &mut extract_link_next(res.headers());
+
+            let mut s: Vec<Languages> = res.json()?;
+            langs.append(&mut s);
+        }
+        println!("{:?}", langs)
     }
 
     for star in stars.iter() {
