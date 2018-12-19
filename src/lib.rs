@@ -90,12 +90,12 @@ impl fmt::Display for Repository {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}]({})", self.full_name, self.html_url)?;
 
-        if let Some(ref description) = self.description {
-            write!(f, " - {}", description)?;
+        if let Some(ref language) = self.language {
+            write!(f, " ({})", language)?;
         }
 
-        if let Some(ref language) = self.language {
-            write!(f, "Main Language: {}", language)?;
+        if let Some(ref description) = self.description {
+            write!(f, " - {}", description)?;
         }
 
         Ok(())
