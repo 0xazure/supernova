@@ -39,7 +39,9 @@ matrix:
       rust: stable
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
@@ -59,7 +61,9 @@ matrix:
       rust: nightly
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
@@ -72,7 +76,9 @@ matrix:
       rust: stable
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
@@ -94,7 +100,9 @@ matrix:
       rust: nightly
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
