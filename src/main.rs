@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate supernova;
 
-use clap::{App, Arg, crate_name, crate_version};
+use clap::{crate_name, crate_version, App, Arg};
 use std::process;
 use supernova::Config;
 
@@ -12,13 +12,15 @@ fn main() {
             Arg::with_name("USERNAME")
                 .help("The user whose stars to collect")
                 .required(true),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("TOKEN")
                 .short("t")
                 .long("token")
                 .help("Sets the authentication token for requests to GitHub")
                 .takes_value(true),
-        ).get_matches()
+        )
+        .get_matches()
         .into();
 
     if let Err(e) = supernova::collect_stars(config) {
