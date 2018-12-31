@@ -40,6 +40,7 @@ matrix:
       before_script:
         - rustup component add clippy-preview
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
@@ -50,7 +51,11 @@ matrix:
     - name: Linux-Beta
       env: TARGET=x86_64-unknown-linux-gnu
       rust: beta
+      before_script:
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --verbose
 
@@ -60,6 +65,7 @@ matrix:
       before_script:
         - rustup component add clippy-preview
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
@@ -73,6 +79,7 @@ matrix:
       before_script:
         - rustup component add clippy-preview
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
@@ -84,7 +91,11 @@ matrix:
       os: windows
       env: TARGET=x86_64-pc-windows-msvc
       rust: beta
+      before_script:
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --verbose
 
@@ -95,6 +106,7 @@ matrix:
       before_script:
         - rustup component add clippy-preview
         - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
         - cargo fmt --all -- --check
