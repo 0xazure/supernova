@@ -39,8 +39,12 @@ matrix:
       rust: stable
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --release --target $TARGET --locked
       <<: *DEPLOY_TO_GITHUB
@@ -48,7 +52,11 @@ matrix:
     - name: Linux-Beta
       env: TARGET=x86_64-unknown-linux-gnu
       rust: beta
+      before_script:
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --verbose
 
@@ -57,8 +65,12 @@ matrix:
       rust: nightly
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --verbose
     
@@ -68,8 +80,12 @@ matrix:
       rust: stable
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --release --target $TARGET --locked
       <<: *DEPLOY_TO_GITHUB
@@ -78,7 +94,11 @@ matrix:
       os: windows
       env: TARGET=x86_64-pc-windows-msvc
       rust: beta
+      before_script:
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --verbose
 
@@ -88,7 +108,11 @@ matrix:
       rust: nightly
       before_script:
         - rustup component add clippy-preview
+        - cargo clippy --version
+        - rustup component add rustfmt
+        - rustfmt --version
       script:
         - cargo clippy --all-targets --all-features -- -D warnings
+        - cargo fmt --all -- --check
         - cargo test --verbose
         - cargo build --verbose
